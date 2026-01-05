@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '../App';
 import { LogOut, UserPlus } from 'lucide-react';
 import { CreateUserPage, NewUser } from './admin/CreateUserPage';
 import { Logo } from './Logo';
+useEffect(() => {
+  fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/users`)
+    .then(res => res.json())
+    .then(data => setCreatedUsers(data));
+}, []);
+const [currentPage, setCurrentPage] = useState<AdminPage>('users');
+const [createdUsers, setCreatedUsers] = useState<any[]>([]);
+
 
 interface AdminDashboardProps {
   user: User;
@@ -13,12 +21,24 @@ type AdminPage = 'users' | 'create-user';
 
 export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
   const [currentPage, setCurrentPage] = useState<AdminPage>('users');
-  const [createdUsers, setCreatedUsers] = useState<Array<NewUser & { createdAt: Date }>>([]);
+  const [createdUsers, setCreatedUsers] = useState<any[]>([]);
 
-  const handleCreateUser = (newUser: NewUser) => {
-    setCreatedUsers([...createdUsers, { ...newUser, createdAt: new Date() }]);
-    setCurrentPage('users');
-  };
+
+  const handleCreateUser = async (newUser: NewUser) => {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/admin/users`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser),
+    }
+  );
+
+  const createdUser = await res.json();
+  setCreatedUsers(prev => [createdUser, ...prev]);
+  setCurrentPage('users');
+};
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -90,7 +110,7 @@ export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {u.createdAt.toLocaleDateString()} {u.createdAt.toLocaleTimeString()}
+                            {new Date(u.created_at).toLocaleString()} {u.createdAt.toLocaleTimeString()}
                           </td>
                         </tr>
                       ))
